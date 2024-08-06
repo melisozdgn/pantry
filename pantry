@@ -1,0 +1,58 @@
+import React, { useState, useEffect } from 'react';
+import { Container, TextField, Button, List, ListItem, ListItemText, IconButton } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { db } from '../firebaseConfig';
+import { collection, addDoc, getDocs, deleteDoc, doc } from 'firebase/firestore';
+
+const Home = () => {
+
+  const [item, setItem] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [pantryItems, setPantryItems] = useState([]);
+
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const fetchItems = async () => {
+    const querySnapshot = await getDocs(collection(db, "pantryItems"));
+    const items = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    setPantryItems(items);
+  };
+
+  const addItem = async () => {
+    await addDoc(collection(db, "pantryItems"), {
+      item,
+      quantity: parseInt(quantity),
+    });
+    fetchItems();
+    setItem('');
+    setQuantity('');
+  };
+
+  const removeItem = async (id) => {
+    await deleteDoc(doc(db, "pantryItems", id));
+    fetchItems();
+  };
+
+  return (
+    <Container>
+      <h1>Pantry Management</h1>
+      <TextField label="Item" value={item} onChange={(e) => setItem(e.target.value)} />
+      <TextField label="Quantity" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+      <Button variant="contained" color="primary" onClick={addItem}>Add Item</Button>
+      <List>
+        {pantryItems.map((pantryItem) => (
+          <ListItem key={pantryItem.id}>
+            <ListItemText primary={`${pantryItem.item} - ${pantryItem.quantity}`} />
+            <IconButton edge="end" aria-label="delete" onClick={() => removeItem(pantryItem.id)}>
+              <DeleteIcon />
+            </IconButton>
+          </ListItem>
+        ))} 
+      </List>
+    </Container>
+  );
+};
+
+export default Home;
